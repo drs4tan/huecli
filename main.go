@@ -29,20 +29,21 @@ var optFind string = ""
 var optAlert bool = false
 
 func init() {
-	flag.BoolVar(&optList, "list", false, "List all Hue lights")
-	flag.StringVar(&optFind, "find", "", "Find Hue light")
-	flag.BoolVar(&optAlert, "alert", false, "Blink light")
+	flag.BoolVar(&optList, "list", optList, "List all Hue lights")
+	flag.StringVar(&optFind, "find", optFind, "Find Hue light")
+	flag.BoolVar(&optAlert, "alert", optAlert, "Blink light")
 	flag.Parse()
 }
 
 func main() {
 
-	println(optAlert)
 	bridge := huego.New("192.168.1.101", "VtGw9pfjWX1V6AYgpWwY2M4I0iyiRp82DXKLOWva")
 
 	if optAlert == true {
-		testl := findlight(optFind, bridge)
-		testl.Alert("select")
+		test1 := findlights(optFind, bridge)
+		for i := range test1 {
+			test1[i].Alert("select")
+		}
 	}
 
 	if optList == true {
@@ -54,13 +55,13 @@ func main() {
 
 }
 
-/*
-func findlights(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
+func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
 		println(err.Error)
 	}
 
+	var matchedLights []huego.Light
 
 	println("ID of lights:")
 	for i := range allTheLights {
@@ -68,12 +69,11 @@ func findlights(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
 		if strings.Contains(allTheLights[i].Name, nameOfLight) {
 
 			fmt.Println(allTheLights[i].ID)
-			return allTheLights[i]
+			matchedLights = append(matchedLights, allTheLights[i])
 		}
 	}
-	return
+	return matchedLights
 }
-*/
 
 func findlight(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
 	allTheLights, err := bridge.GetLights()
