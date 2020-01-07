@@ -1,6 +1,18 @@
 package main
 
+//Hue Username:
 //VtGw9pfjWX1V6AYgpWwY2M4I0iyiRp82DXKLOWva
+
+/*
+TODO:
+	finish findlights
+	alerts work with both findlight/s
+	COLORS!
+
+
+
+*/
+
 import (
 	"flag"
 	"fmt"
