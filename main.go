@@ -5,13 +5,34 @@ package main
 
 /*
 TODO:
-	finish findlights
-	alerts work with both findlight/s
+	!finish findlights
+	!alerts work with both findlight/s
 	COLORS!
 
 
 
 */
+
+
+
+type RGBColor struct {
+	R uint16
+	G uint16
+	B uint16
+}
+
+type XYColor struct {
+	X uint8
+	Y uint8
+}
+
+func (XY *XYColor) ConvToRGB() {
+	var RGB RGBColor
+
+	
+
+
+}
 
 import (
 	"flag"
@@ -25,14 +46,27 @@ import (
 //Built version will need changes!
 
 var optList bool = false
-var optFind string = ""
+var optFind string = "off"
 var optAlert bool = false
 
+const 
+
+
+
 func init() {
-	flag.BoolVar(&optList, "list", optList, "List all Hue lights")
-	flag.StringVar(&optFind, "find", optFind, "Find Hue light")
-	flag.BoolVar(&optAlert, "alert", optAlert, "Blink light")
+	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
+	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
+	flag.BoolVar(&optAlert, "alert", optAlert, "Blink lights")
+
 	flag.Parse()
+}
+
+func changelightcolor(bridge *huego.Bridge) {
+	test1 := findlights(optFind, bridge)
+	for i := range test1 {
+		err := test1[i].Hue(30000)
+		fmt.Println(err)
+	}
 }
 
 func main() {
@@ -50,8 +84,7 @@ func main() {
 		listlights(bridge)
 	}
 
-	//findlight("he", bridge)
-	//findall(bridge)
+	changelightcolor(bridge)
 
 }
 
@@ -75,6 +108,7 @@ func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) 
 	return matchedLights
 }
 
+//This func is depracated
 func findlight(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
@@ -102,4 +136,3 @@ func listlights(bridge *huego.Bridge) {
 		fmt.Println(allTheLights[i].ID, allTheLights[i].Name)
 	}
 
-}
