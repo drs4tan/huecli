@@ -5,39 +5,50 @@ package main
 
 /*
 TODO:
-	!finish findlights
-	!alerts work with both findlight/s
-	COLORS!
-
-
-
+	add groups
+	add device registration
+	add file-based saving of username
+	clean code
+	comment code
 */
 
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/amimof/huego"
 )
 
+var red RGBColor = RGBColor{255, 0, 0}
+var blue RGBColor = RGBColor{0, 0, 255}
+var green RGBColor = RGBColor{0, 255, 0}
+
+//Structs and type funcs
+
+//RGBColor holds RGB color infomation
+//Red, Green, Blue respecively
 type RGBColor struct {
-	R float32
-	G float32
-	B float32
+	R, G, B float32
 }
 
+//XYColor holds XY color infomation
+//X, Y respecively
 type XYColor struct {
-	X float32
-	Y float32
+	X, Y float32
 }
 
+//ConvToArray converts XY color to a float32 slice
+//Might be depracated in future
 func (xy XYColor) ConvToArray() []float32 {
 	var xyarray []float32
 	xyarray = append(xyarray, xy.X, xy.Y)
 	return xyarray
 }
 
+//ConvToXY converts RGB color to XY color
+//Returns XY Color
 func (RGB *RGBColor) ConvToXY() XYColor {
 	var xy XYColor
 	var X, Y, Z, cx, cy float32
@@ -61,51 +72,70 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 var optList bool = false
 var optFind string = "off"
 var optAlert bool = false
+var optColorName string = ""
+var optColorRGB string = "255-255-255"
+var optBrightness uint8 = 255
 
 func init() {
 	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
-	flag.BoolVar(&optAlert, "alert", optAlert, "Blink lights")
+	flag.BoolVar(&optAlert, "alrt", optAlert, "Blink lights")
+	flag.StringVar(&optColorRGB, "color", optColorRGB, "Specify a color you want the light in format R-G-B")
 
 	flag.Parse()
-}
-
-func changelightcolor(bridge *huego.Bridge, xy XYColor) {
-	test1 := findlights(optFind, bridge)
-	for i := range test1 {
-		err := test1[i].Xy(xy.ConvToArray())
-		fmt.Println(err)
-	}
 }
 
 func main() {
 
 	bridge := huego.New("192.168.1.101", "VtGw9pfjWX1V6AYgpWwY2M4I0iyiRp82DXKLOWva")
 
-	if optAlert == true {
+	switch {
+	case optAlert == true:
 		test1 := findlights(optFind, bridge)
 		for i := range test1 {
 			test1[i].Alert("select")
 		}
-	}
-
-	if optList == true {
+	case optList == true:
 		listlights(bridge)
+
+	case optColorRGB != "":
+		rgb := parsecolorflag(optColorRGB)
+		rgbc := RGBColor{rgb[0], rgb[1], rgb[2]}
+		xy := rgbc.ConvToXY()
+
+		fmt.Println(xy.X, xy.Y)
+		changelightcolor(bridge, xy)
+
 	}
 
-	RGB := RGBColor{R: 0, G: 0, B: 0}
-	XY := RGB.ConvToXY()
+}
 
-	fmt.Println(XY.X, XY.Y)
+func parsecolorflag(flg string) []float32 {
+	strS := strings.Split(flg, "-")
+	var fltS []float32
 
-	changelightcolor(bridge, XY)
+	for i := range strS {
+		flt, _ := strconv.ParseFloat(strS[i], 32)
+		fltS = append(fltS, float32(flt))
+	}
+	return fltS
 
+}
+
+func changelightcolor(bridge *huego.Bridge, xy XYColor) {
+	test1 := findlights(optFind, bridge)
+	for i := range test1 {
+		err := test1[i].Xy(xy.ConvToArray())
+		if err != nil {
+			fmt.Println("Woops: ", err.Error())
+		}
+	}
 }
 
 func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
-		println(err.Error)
+		fmt.Println("Woops:", err.Error())
 	}
 
 	var matchedLights []huego.Light
@@ -122,11 +152,23 @@ func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) 
 	return matchedLights
 }
 
-//This func is depracated
+func listlights(bridge *huego.Bridge) {
+	allTheLights, err := bridge.GetLights()
+	if err != nil {
+		fmt.Println("Woops:", err.Error())
+	}
+	println("Listing all lights:")
+	for i := range allTheLights {
+		fmt.Println(allTheLights[i].ID, allTheLights[i].Name)
+	}
+}
+
+/*
+This func is depracated
 func findlight(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
-		println(err.Error)
+		fmt.Println("Woops:", err.Error())
 	}
 
 	for i := range allTheLights {
@@ -139,14 +181,4 @@ func findlight(nameOfLight string, bridge *huego.Bridge) (light huego.Light) {
 	}
 	return
 }
-
-func listlights(bridge *huego.Bridge) {
-	allTheLights, err := bridge.GetLights()
-	if err != nil {
-		println(err.Error)
-	}
-	println("Listing all lights...")
-	for i := range allTheLights {
-		fmt.Println(allTheLights[i].ID, allTheLights[i].Name)
-	}
-}
+*/
