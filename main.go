@@ -7,7 +7,10 @@ package main
 TODO:
 	add groups
 	add device registration
-	add file-based saving of username
+	add brightness control
+	add hex color option
+	add named color option
+	*add file-based saving of username/ip
 	clean code
 	comment code
 */
@@ -88,32 +91,28 @@ func init() {
 }
 
 func main() {
-	var uname string
+	var uname, ip string
 	if fileExists("username") {
-		unameb, err := ioutil.ReadFile("username")
+		b, err := ioutil.ReadFile("username")
 		if err != nil {
 			fmt.Println("Woops:", err.Error())
 			os.Exit(1)
 		}
+		bs := strings.Split(string(b), "/")
 
-		fmt.Println("username:", unameb)
+		fmt.Println("username:", bs[0])
+		fmt.Println("ip:", bs[1])
 
-		uname = string(unameb)
+		uname = bs[0]
+		ip = bs[1]
 
 	} else {
 
-		println("No username found, please enter the Philips Hue username:")
-		fmt.Scanln(&uname)
+		createUsername(&uname, &ip)
 
-		unameb := []byte(uname)
-		err := ioutil.WriteFile("username", unameb, 0777)
-		if err != nil {
-			fmt.Println("Woops:", err.Error())
-			os.Exit(2)
-		}
 	}
 
-	bridge := huego.New("192.168.1.101", uname)
+	bridge := huego.New(ip, uname)
 
 	switch {
 	case optAlert == true:
@@ -135,6 +134,39 @@ func main() {
 	}
 
 }
+
+func createUsername(uname *string, ip *string) {
+	var optUname []byte
+	println("No username/ip found! Would you like to create/find them or enter them? ")
+	println("Valid options: >create >enter")
+	fmt.Scanln(&optUname)
+
+	if string(optUname) == "create" {
+
+	} else {
+
+		var unameb, ipb []byte
+
+		println("please enter the Philips Hue username:")
+		fmt.Scanln(&unameb)
+
+		println("please enter the Philips Hue hub IP:")
+		fmt.Scanln(&ipb)
+
+		finalbs := string(unameb) + "/" + string(ipb)
+
+		err := ioutil.WriteFile("username", []byte(finalbs), 0777)
+		if err != nil {
+			fmt.Println("Woops:", err.Error())
+			os.Exit(2)
+		}
+
+		*uname = string(unameb)
+		*ip = string(ipb)
+	}
+
+}
+
 func fileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
