@@ -1,8 +1,5 @@
 package main
 
-//Hue Username:
-//VtGw9pfjWX1V6AYgpWwY2M4I0iyiRp82DXKLOWva
-
 /*
 TODO:
 	add groups
