@@ -15,6 +15,8 @@ TODO:
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -71,9 +73,9 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 
 var optList bool = false
 var optFind string = "off"
-var optAlert bool = false
+var optAlert bool = true
 var optColorName string = ""
-var optColorRGB string = "255-255-255"
+var optColorRGB string = ""
 var optBrightness uint8 = 255
 
 func init() {
@@ -86,8 +88,32 @@ func init() {
 }
 
 func main() {
+	var uname string
+	if fileExists("username") {
+		unameb, err := ioutil.ReadFile("username")
+		if err != nil {
+			fmt.Println("Woops:", err.Error())
+			os.Exit(1)
+		}
 
-	bridge := huego.New("192.168.1.101", "VtGw9pfjWX1V6AYgpWwY2M4I0iyiRp82DXKLOWva")
+		fmt.Println("username:", unameb)
+
+		uname = string(unameb)
+
+	} else {
+
+		println("No username found, please enter the Philips Hue username:")
+		fmt.Scanln(&uname)
+
+		unameb := []byte(uname)
+		err := ioutil.WriteFile("username", unameb, 0777)
+		if err != nil {
+			fmt.Println("Woops:", err.Error())
+			os.Exit(2)
+		}
+	}
+
+	bridge := huego.New("192.168.1.101", uname)
 
 	switch {
 	case optAlert == true:
@@ -108,6 +134,13 @@ func main() {
 
 	}
 
+}
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 func parsecolorflag(flg string) []float32 {
