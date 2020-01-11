@@ -139,6 +139,25 @@ func createUsername(uname *string, ip *string) {
 	fmt.Scanln(&optUname)
 
 	if string(optUname) == "create" {
+		println("Press the link button on the Philips Hue hub, then press enter")
+		fmt.Scanln(&optUname)
+		bridge, _ := huego.Discover()
+		user, err := bridge.CreateUser("huecli") // Link button needs to be pressed
+		if err != nil {
+			fmt.Printf("Error creating user: %s", err.Error())
+		}
+
+		bridge = bridge.Login(user)
+		finalbs := user + "/" + bridge.Host
+		println(finalbs)
+		err = ioutil.WriteFile("username", []byte(finalbs), 0777)
+		if err != nil {
+			fmt.Println("Woops:", err.Error())
+			os.Exit(2)
+		}
+
+		*uname = string(user)
+		*ip = string(bridge.Host)
 
 	} else {
 
