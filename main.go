@@ -57,20 +57,22 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 //Built version will need changes!
 
 var optList bool = false
-var optFind string = "off"
+var optFind string = ""
 var optAlert bool = false
-var optColorName string = "white"
+var optColorName string = ""
 var optColorRGB string = ""
 var optColorHEX string = ""
-var optBrightness uint8 = 255
+var optBrightness uint = 255
 
 func init() {
 	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
-	flag.BoolVar(&optAlert, "alrt", optAlert, "Blink lights")
+	flag.BoolVar(&optAlert, "alert", optAlert, "Blink lights")
 	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
 	flag.StringVar(&optColorHEX, "hex", optColorHEX, "Specify a color you want the light in hex format (0F0F0F)")
 	flag.StringVar(&optColorName, "color", optColorName, "Specify a color you want the light (red, green, blue, white)")
+	flag.UintVar(&optBrightness, "brightness", optBrightness, "Set light brightness (0-254)")
+
 	flag.Parse()
 }
 
@@ -107,20 +109,20 @@ func main() {
 
 	switch {
 	case optAlert == true:
-		test1 := findlights(optFind, bridge)
-		for i := range test1 {
-			test1[i].Alert("select")
+		matchLights := findLights(optFind, bridge)
+		for i := range matchLights {
+			matchLights[i].Alert("select")
 		}
 	case optList == true:
-		listlights(bridge)
+		listLights(bridge)
 
 	case optColorRGB != "":
-		rgb := parsecolorflag(optColorRGB)
+		rgb := parseColorFlag(optColorRGB)
 		rgbc := RGBColor{rgb[0], rgb[1], rgb[2]}
 		xy := rgbc.ConvToXY()
 
 		fmt.Println(xy.X, xy.Y)
-		changelightcolor(bridge, xy)
+		changeLightColor(bridge, xy)
 
 	case optColorHEX != "":
 		b, err := hex.DecodeString(optColorHEX)
@@ -131,13 +133,16 @@ func main() {
 		RGBC := RGBColor{float32(b[0]), float32(b[1]), float32(b[2])}
 		xy := RGBC.ConvToXY()
 
-		changelightcolor(bridge, xy)
+		changeLightColor(bridge, xy)
 
 	case optColorName != "":
 		RGBC := namedColor(optColorName, namedColors)
 		xy := RGBC.ConvToXY()
 
-		changelightcolor(bridge, xy)
+		changeLightColor(bridge, xy)
+
+	case optBrightness != 255:
+		changeLightBrightness(bridge, optBrightness)
 	}
 
 }
@@ -159,9 +164,9 @@ func createUsername(uname *string, ip *string) {
 		}
 
 		bridge = bridge.Login(user)
-		finalbs := user + "/" + bridge.Host
-		println(finalbs)
-		err = ioutil.WriteFile("username", []byte(finalbs), 0777)
+		finalstr := user + "/" + bridge.Host
+		println(finalstr)
+		err = ioutil.WriteFile("username", []byte(finalstr), 0777)
 		if err != nil {
 			fmt.Println("Woops:", err.Error())
 			os.Exit(2)
@@ -180,9 +185,9 @@ func createUsername(uname *string, ip *string) {
 		println("please enter the Philips Hue hub IP:")
 		fmt.Scanln(&ipb)
 
-		finalbs := string(unameb) + "/" + string(ipb)
+		finalstr := string(unameb) + "/" + string(ipb)
 
-		err := ioutil.WriteFile("username", []byte(finalbs), 0777)
+		err := ioutil.WriteFile("username", []byte(finalstr), 0777)
 		if err != nil {
 			fmt.Println("Woops:", err.Error())
 			os.Exit(2)
@@ -202,7 +207,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func parsecolorflag(flg string) []float32 {
+func parseColorFlag(flg string) []float32 {
 	strS := strings.Split(flg, "-")
 	var fltS []float32
 
@@ -214,10 +219,21 @@ func parsecolorflag(flg string) []float32 {
 
 }
 
-func changelightcolor(bridge *huego.Bridge, xy XYColor) {
-	test1 := findlights(optFind, bridge)
-	for i := range test1 {
-		err := test1[i].Xy(xy.ConvToArray())
+func changeLightBrightness(bridge *huego.Bridge, level uint) {
+	matchLights := findLights(optFind, bridge)
+	for i := range matchLights {
+		err := matchLights[i].Bri(uint8(level))
+		if err != nil {
+			fmt.Println("Woops: ", err.Error())
+		}
+	}
+
+}
+
+func changeLightColor(bridge *huego.Bridge, xy XYColor) {
+	matchLights := findLights(optFind, bridge)
+	for i := range matchLights {
+		err := matchLights[i].Xy(xy.ConvToArray())
 		if err != nil {
 			fmt.Println("Woops: ", err.Error())
 		}
@@ -235,7 +251,7 @@ func namedColor(colorstr string, named map[string]RGBColor) (color RGBColor) {
 	return
 }
 
-func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
+func findLights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
 		fmt.Println("Woops:", err.Error())
@@ -255,7 +271,7 @@ func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) 
 	return matchedLights
 }
 
-func listlights(bridge *huego.Bridge) {
+func listLights(bridge *huego.Bridge) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
 		fmt.Println("Woops:", err.Error())
