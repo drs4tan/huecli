@@ -13,6 +13,7 @@ TODO:
 */
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -22,10 +23,6 @@ import (
 
 	"github.com/amimof/huego"
 )
-
-var red RGBColor = RGBColor{255, 0, 0}
-var blue RGBColor = RGBColor{0, 0, 255}
-var green RGBColor = RGBColor{0, 255, 0}
 
 //Structs and type funcs
 
@@ -73,21 +70,30 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 
 var optList bool = false
 var optFind string = "off"
-var optAlert bool = true
-var optColorName string = ""
+var optAlert bool = false
+var optColorName string = "white"
 var optColorRGB string = ""
+var optColorHEX string = ""
 var optBrightness uint8 = 255
 
 func init() {
 	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
 	flag.BoolVar(&optAlert, "alrt", optAlert, "Blink lights")
-	flag.StringVar(&optColorRGB, "color", optColorRGB, "Specify a color you want the light in format R-G-B")
-
+	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16,16,16)")
+	flag.StringVar(&optColorHEX, "hex", optColorHEX, "Specify a color you want the light in hex format (0F0F0F)")
+	flag.StringVar(&optColorName, "color", optColorName, "Specify a color you want the light (red, green, blue, white)")
 	flag.Parse()
 }
 
 func main() {
+	namedColors := map[string]RGBColor{
+		"red":   RGBColor{255, 0, 0},
+		"blue":  RGBColor{0, 0, 255},
+		"green": RGBColor{0, 255, 0},
+		"white": RGBColor{255, 255, 255},
+	}
+
 	var uname, ip string
 	if fileExists("username") {
 		b, err := ioutil.ReadFile("username")
@@ -128,6 +134,22 @@ func main() {
 		fmt.Println(xy.X, xy.Y)
 		changelightcolor(bridge, xy)
 
+	case optColorHEX != "":
+		b, err := hex.DecodeString(optColorHEX)
+		if err != nil {
+			fmt.Println("Woops:", err.Error())
+			os.Exit(3)
+		}
+		RGBC := RGBColor{float32(b[0]), float32(b[1]), float32(b[2])}
+		xy := RGBC.ConvToXY()
+
+		changelightcolor(bridge, xy)
+
+	case optColorName != "":
+		RGBC := namedColor(optColorName, namedColors)
+		xy := RGBC.ConvToXY()
+
+		changelightcolor(bridge, xy)
 	}
 
 }
@@ -144,7 +166,8 @@ func createUsername(uname *string, ip *string) {
 		bridge, _ := huego.Discover()
 		user, err := bridge.CreateUser("huecli") // Link button needs to be pressed
 		if err != nil {
-			fmt.Printf("Error creating user: %s", err.Error())
+			fmt.Printf("Woops: %s", err.Error())
+			os.Exit(2)
 		}
 
 		bridge = bridge.Login(user)
@@ -211,6 +234,17 @@ func changelightcolor(bridge *huego.Bridge, xy XYColor) {
 			fmt.Println("Woops: ", err.Error())
 		}
 	}
+}
+
+func namedColor(colorstr string, named map[string]RGBColor) (color RGBColor) {
+	_, exists := named[colorstr]
+	if exists == true {
+		return named[colorstr]
+	}
+
+	fmt.Printf("Woops: No named color of %s defined", colorstr)
+	os.Exit(4)
+	return
 }
 
 func findlights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
