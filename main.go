@@ -1,17 +1,5 @@
 package main
 
-/*
-TODO:
-	add groups
-	add device registration
-	add brightness control
-	add hex color option
-	add named color option
-	*add file-based saving of username/ip
-	clean code
-	comment code
-*/
-
 import (
 	"encoding/hex"
 	"flag"
@@ -80,7 +68,7 @@ func init() {
 	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
 	flag.BoolVar(&optAlert, "alrt", optAlert, "Blink lights")
-	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16,16,16)")
+	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
 	flag.StringVar(&optColorHEX, "hex", optColorHEX, "Specify a color you want the light in hex format (0F0F0F)")
 	flag.StringVar(&optColorName, "color", optColorName, "Specify a color you want the light (red, green, blue, white)")
 	flag.Parse()
