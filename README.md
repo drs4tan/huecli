@@ -4,6 +4,8 @@ A cross-platform command line Philips Hue client built with golang and huego.
 ## TODO
 
 * add groups
+* add loggy based logging
+* seprate CLI from hue communication
 * add device registration **DONE**
 * add brightness control **DONE**
 * add hex color option **DONE**
