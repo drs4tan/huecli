@@ -12,6 +12,9 @@ A cross-platform command line Philips Hue client built with golang and huego.
 * clean code
 * comment code
 
+## SETUP
+
+On first run huecli will look for a file "username". If a file is not found it will ask you to either enter a username/ip or create a user. 
 
 ## USAGE
 
