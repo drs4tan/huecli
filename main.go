@@ -55,7 +55,7 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 
 //Vars for defualt flags
 //Built version will need changes!
-
+var optOff bool = false
 var optList bool = false
 var optFind string = ""
 var optAlert bool = false
@@ -65,7 +65,8 @@ var optColorHEX string = ""
 var optBrightness uint = 255
 
 func init() {
-	flag.BoolVar(&optList, "list", optList, "List all Hue lights with ID and name")
+	flag.BoolVar(&optOff, "s", optOff, "Shutoff lights")
+	flag.BoolVar(&optList, "ls", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
 	flag.BoolVar(&optAlert, "alert", optAlert, "Blink lights")
 	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
@@ -108,11 +109,18 @@ func main() {
 	bridge := huego.New(ip, uname)
 
 	switch {
+
+	case optOff == true:
+		matchLights := findLights(optFind, bridge)
+		for i := range matchLights {
+			matchLights[i].Off()
+		}
 	case optAlert == true:
 		matchLights := findLights(optFind, bridge)
 		for i := range matchLights {
 			matchLights[i].Alert("select")
 		}
+
 	case optList == true:
 		listLights(bridge)
 
