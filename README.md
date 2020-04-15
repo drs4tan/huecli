@@ -21,19 +21,22 @@ On first run huecli will look for a file "username". If a file is not found it w
 ## USAGE
 
 ```
-  -alert
+Usage of ./huecli:
+  -a    
         Blink lights
-  -brightness uint
+  -b uint
         Set light brightness (0-254) (default 255)
-  -color string
+  -clr string
         Specify a color you want the light (red, green, blue, white)
   -f string
         Find Hue lights with the name value
   -hex string
         Specify a color you want the light in hex format (0F0F0F)
-  -list
+  -ls
         List all Hue lights with ID and name
   -rgb string
         Specify a color you want the light in format R-G-B (16-16-16)
+  -s    
+        Shutoff lights
 
 ```

@@ -68,11 +68,11 @@ func init() {
 	flag.BoolVar(&optOff, "s", optOff, "Shutoff lights")
 	flag.BoolVar(&optList, "ls", optList, "List all Hue lights with ID and name")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
-	flag.BoolVar(&optAlert, "alert", optAlert, "Blink lights")
+	flag.BoolVar(&optAlert, "a", optAlert, "Blink lights")
 	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
 	flag.StringVar(&optColorHEX, "hex", optColorHEX, "Specify a color you want the light in hex format (0F0F0F)")
-	flag.StringVar(&optColorName, "color", optColorName, "Specify a color you want the light (red, green, blue, white)")
-	flag.UintVar(&optBrightness, "brightness", optBrightness, "Set light brightness (0-254)")
+	flag.StringVar(&optColorName, "clr", optColorName, "Specify a color you want the light (red, green, blue, white)")
+	flag.UintVar(&optBrightness, "b", optBrightness, "Set light brightness (0-254)")
 
 	flag.Parse()
 }
