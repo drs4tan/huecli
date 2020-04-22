@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"github.com/Rudi9719/loggy"
 	"github.com/amimof/huego"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -66,6 +69,8 @@ var optBrightness uint = 255
 var optTemp uint = 0
 var optDelay uint = 0
 
+var k = koanf.New("/")
+
 func init() {
 	flag.BoolVar(&optOff, "s", optOff, "Shutoff lights")
 	flag.BoolVar(&optList, "ls", optList, "List all Hue lights with ID and name")
@@ -81,7 +86,11 @@ func init() {
 }
 
 func main() {
-	logOpt := loggy.LogOpts{KBTeam: "satan_logs", KBChann: "general", ProgName: "huecli", Level: loggy.Info}
+	if err := k.Load(file.Provider("f:/PATH/settings.yml"), yaml.Parser()); err != nil {
+		print("error mate")
+	}
+
+	logOpt := loggy.LogOpts{KBTeam: k.String("kbteams"), KBChann: k.String("kbchan"), ProgName: k.String("prog"), Level: loggy.Info}
 	//logOpt.OutFile = "~/Logs/huecli"
 	//logOpt.UseStdout = true
 	log := loggy.NewLogger(logOpt)
@@ -94,25 +103,7 @@ func main() {
 		"white": RGBColor{255, 255, 255},
 	}
 
-	var uname, ip string
-	if fileExists("username") {
-		b, err := ioutil.ReadFile("username")
-		if err != nil {
-			log.LogError(fmt.Sprintf("Error reading username: %v", err.Error()))
-			os.Exit(1)
-		}
-		bs := strings.Split(string(b), "/")
-		log.LogDebug(fmt.Sprintf("%v:%v", bs[0], bs[1]))
-		uname = bs[0]
-		ip = bs[1]
-
-	} else {
-
-		createUsername(&uname, &ip)
-
-	}
-
-	bridge := huego.New(ip, uname)
+	bridge := huego.New(k.String("hueip"), k.String("hueusername"))
 
 	if optDelay > 0 {
 		matchLights := findLights(optFind, bridge, logp)
