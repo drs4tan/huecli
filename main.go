@@ -90,7 +90,7 @@ func main() {
 		print("error mate")
 	}
 
-	logOpt := loggy.LogOpts{KBTeam: k.String("kbteams"), KBChann: k.String("kbchan"), ProgName: k.String("prog"), Level: loggy.Info}
+	logOpt := loggy.LogOpts{KBTeam: k.String("kbteam"), KBChann: k.String("kbchan"), ProgName: k.String("prog"), Level: loggy.Info}
 	//logOpt.OutFile = "~/Logs/huecli"
 	//logOpt.UseStdout = true
 	log := loggy.NewLogger(logOpt)
