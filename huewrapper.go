@@ -1,14 +1,13 @@
-package main
+package huewrapper
 
 import (
 	"encoding/hex"
-	"flag"
 	"fmt"
-	"github.com/Rudi9719/loggy"
 	"github.com/amimof/huego"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/rudi9719/loggy"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -56,37 +55,24 @@ func (RGB *RGBColor) ConvToXY() XYColor {
 
 }
 
-//Vars for defualt flags
-//Built version will need changes!
-var optOff bool = false
-var optList bool = false
-var optFind string = ""
-var optAlert bool = false
-var optColorName string = ""
-var optColorRGB string = ""
-var optColorHEX string = ""
-var optBrightness uint = 255
-var optTemp uint = 0
-var optDelay uint = 0
+//Options to pass to run
+type Options struct {
+	OptOff        bool
+	OptList       bool
+	OptFind       string
+	OptAlert      bool
+	OptColorName  string
+	OptColorRGB   string
+	OptColorHEX   string
+	OptBrightness uint
+	OptTemp       uint
+	OptDelay      uint
+}
 
 var k = koanf.New("/")
 
-func init() {
-	flag.BoolVar(&optOff, "s", optOff, "Shutoff lights")
-	flag.BoolVar(&optList, "ls", optList, "List all Hue lights with ID and name")
-	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
-	flag.BoolVar(&optAlert, "a", optAlert, "Blink lights")
-	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
-	flag.StringVar(&optColorHEX, "hex", optColorHEX, "Specify a color you want the light in hex format (0f0f0f)")
-	flag.StringVar(&optColorName, "clr", optColorName, "Specify a color you want the light (red, green, blue, white)")
-	flag.UintVar(&optBrightness, "b", optBrightness, "Set light brightness (0-254)")
-	flag.UintVar(&optTemp, "t", optTemp, "Set light temperature (2200-6500)")
-	flag.UintVar(&optDelay, "d", optDelay, "Set light transistion delay (x00ms)")
-	flag.Parse()
-}
-
-func main() {
-	if err := k.Load(file.Provider("f:/PATH/settings.yml"), yaml.Parser()); err != nil {
+func Run(opt Options) {
+	if err := k.Load(file.Provider("settings.yml"), yaml.Parser()); err != nil {
 		print("error mate")
 	}
 
@@ -105,35 +91,35 @@ func main() {
 
 	bridge := huego.New(k.String("hueip"), k.String("hueusername"))
 
-	if optDelay > 0 {
-		matchLights := findLights(optFind, bridge, logp)
+	if opt.OptDelay > 0 {
+		matchLights := findLights(opt.OptFind, bridge, logp)
 		for i := range matchLights {
-			matchLights[i].TransitionTime(uint16(optDelay))
+			matchLights[i].TransitionTime(uint16(opt.OptDelay))
 		}
 	}
 
-	if optOff == true {
-		matchLights := findLights(optFind, bridge, logp)
+	if opt.OptOff == true {
+		matchLights := findLights(opt.OptFind, bridge, logp)
 		for i := range matchLights {
 			matchLights[i].Off()
 		}
 	}
-	if optAlert == true {
-		matchLights := findLights(optFind, bridge, logp)
+	if opt.OptAlert == true {
+		matchLights := findLights(opt.OptFind, bridge, logp)
 		for i := range matchLights {
 			matchLights[i].Alert("select")
 		}
 	}
-	if optColorRGB != "" {
-		rgb := parseColorFlag(optColorRGB)
+	if opt.OptColorRGB != "" {
+		rgb := parseColorFlag(opt.OptColorRGB)
 		rgbc := RGBColor{rgb[0], rgb[1], rgb[2]}
 		xy := rgbc.ConvToXY()
 		//log.LogInfo(fmt.Sprintf("X: %v Y: %v", xy.X, xy.Y))
-		changeLightColor(bridge, xy, logp)
+		changeLightColor(bridge, xy, logp, opt.OptFind)
 	}
 
-	if optColorHEX != "" {
-		b, err := hex.DecodeString(optColorHEX)
+	if opt.OptColorHEX != "" {
+		b, err := hex.DecodeString(opt.OptColorHEX)
 		if err != nil {
 			log.LogError(fmt.Sprintf("Error decoding hex: %v", err.Error()))
 			os.Exit(3)
@@ -141,25 +127,25 @@ func main() {
 		RGBC := RGBColor{float32(b[0]), float32(b[1]), float32(b[2])}
 		xy := RGBC.ConvToXY()
 
-		changeLightColor(bridge, xy, logp)
+		changeLightColor(bridge, xy, logp, opt.OptFind)
 	}
 
-	if optColorName != "" {
-		RGBC := namedColor(optColorName, namedColors)
+	if opt.OptColorName != "" {
+		RGBC := namedColor(opt.OptColorName, namedColors)
 		xy := RGBC.ConvToXY()
 
-		changeLightColor(bridge, xy, logp)
+		changeLightColor(bridge, xy, logp, opt.OptFind)
+	}
+	print(opt.OptBrightness)
+	if opt.OptBrightness != 0 {
+		changeLightBrightness(bridge, opt.OptBrightness, logp, opt.OptFind)
 	}
 
-	if optBrightness != 255 {
-		changeLightBrightness(bridge, optBrightness, logp)
+	if opt.OptTemp > 0 {
+		changeLightTemp(bridge, uint16(opt.OptTemp), logp, opt.OptFind)
 	}
 
-	if optTemp > 0 {
-		changeLightTemp(bridge, uint16(optTemp), logp)
-	}
-
-	if optList == true {
+	if opt.OptList == true {
 		listLights(bridge, logp)
 	}
 
@@ -237,7 +223,7 @@ func parseColorFlag(flg string) []float32 {
 
 }
 
-func changeLightBrightness(bridge *huego.Bridge, level uint, log *loggy.Logger) {
+func changeLightBrightness(bridge *huego.Bridge, level uint, log *loggy.Logger, optFind string) {
 	matchLights := findLights(optFind, bridge, log)
 	for i := range matchLights {
 		log.LogInfo(fmt.Sprintf("Changed brightness of '%v' (%v): \n %v", matchLights[i].Name, matchLights[i].ID, level))
@@ -250,7 +236,7 @@ func changeLightBrightness(bridge *huego.Bridge, level uint, log *loggy.Logger) 
 
 }
 
-func changeLightTemp(bridge *huego.Bridge, temp uint16, log *loggy.Logger) {
+func changeLightTemp(bridge *huego.Bridge, temp uint16, log *loggy.Logger, optFind string) {
 	matchLights := findLights(optFind, bridge, log)
 	for i := range matchLights {
 		log.LogInfo(fmt.Sprintf("Changed temp of '%v' (%v): \n %vk", matchLights[i].Name, matchLights[i].ID, temp))
@@ -263,7 +249,7 @@ func changeLightTemp(bridge *huego.Bridge, temp uint16, log *loggy.Logger) {
 
 }
 
-func changeLightColor(bridge *huego.Bridge, xy XYColor, log *loggy.Logger) {
+func changeLightColor(bridge *huego.Bridge, xy XYColor, log *loggy.Logger, optFind string) {
 	matchLights := findLights(optFind, bridge, log)
 	for i := range matchLights {
 		log.LogInfo(fmt.Sprintf("Changed color of '%v' (%v): \n %v %v", matchLights[i].Name, matchLights[i].ID, xy.X, xy.Y))
