@@ -4,10 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/amimof/huego"
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/rudi9719/loggy"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -69,19 +65,16 @@ type Options struct {
 	OptDelay      uint
 }
 
-var k = koanf.New("/")
+//HueHub to pass hue username and IP
+type HueHub struct {
+	IP 			string
+	Username 	string
+}
 
-func Run(opt Options) {
-	if err := k.Load(file.Provider("settings.yml"), yaml.Parser()); err != nil {
-		print("error mate")
-	}
 
-	logOpt := loggy.LogOpts{KBTeam: k.String("kbteam"), KBChann: k.String("kbchan"), ProgName: k.String("prog"), Level: loggy.Info}
-	//logOpt.OutFile = "~/Logs/huecli"
-	//logOpt.UseStdout = true
-	log := loggy.NewLogger(logOpt)
-	//log.LogInfo("Task started")
-	logp := &log
+//Run takes the Options and HueHub to execute desired commands
+func Run(opt Options, hub HueHub) {
+	
 	namedColors := map[string]RGBColor{
 		"red":   RGBColor{255, 0, 0},
 		"blue":  RGBColor{0, 0, 255},
@@ -89,23 +82,23 @@ func Run(opt Options) {
 		"white": RGBColor{255, 255, 255},
 	}
 
-	bridge := huego.New(k.String("hueip"), k.String("hueusername"))
+	bridge := huego.New(hub.IP, hub.Username)
 
 	if opt.OptDelay > 0 {
-		matchLights := findLights(opt.OptFind, bridge, logp)
+		matchLights := findLights(opt.OptFind, bridge)
 		for i := range matchLights {
 			matchLights[i].TransitionTime(uint16(opt.OptDelay))
 		}
 	}
 
 	if opt.OptOff == true {
-		matchLights := findLights(opt.OptFind, bridge, logp)
+		matchLights := findLights(opt.OptFind, bridge)
 		for i := range matchLights {
 			matchLights[i].Off()
 		}
 	}
 	if opt.OptAlert == true {
-		matchLights := findLights(opt.OptFind, bridge, logp)
+		matchLights := findLights(opt.OptFind, bridge)
 		for i := range matchLights {
 			matchLights[i].Alert("select")
 		}
@@ -115,38 +108,37 @@ func Run(opt Options) {
 		rgbc := RGBColor{rgb[0], rgb[1], rgb[2]}
 		xy := rgbc.ConvToXY()
 		//log.LogInfo(fmt.Sprintf("X: %v Y: %v", xy.X, xy.Y))
-		changeLightColor(bridge, xy, logp, opt.OptFind)
+		changeLightColor(bridge, xy, opt.OptFind)
 	}
 
 	if opt.OptColorHEX != "" {
 		b, err := hex.DecodeString(opt.OptColorHEX)
 		if err != nil {
-			log.LogError(fmt.Sprintf("Error decoding hex: %v", err.Error()))
 			os.Exit(3)
 		}
 		RGBC := RGBColor{float32(b[0]), float32(b[1]), float32(b[2])}
 		xy := RGBC.ConvToXY()
 
-		changeLightColor(bridge, xy, logp, opt.OptFind)
+		changeLightColor(bridge, xy, opt.OptFind)
 	}
 
 	if opt.OptColorName != "" {
 		RGBC := namedColor(opt.OptColorName, namedColors)
 		xy := RGBC.ConvToXY()
 
-		changeLightColor(bridge, xy, logp, opt.OptFind)
+		changeLightColor(bridge, xy, opt.OptFind)
 	}
-	print(opt.OptBrightness)
+
 	if opt.OptBrightness != 0 {
-		changeLightBrightness(bridge, opt.OptBrightness, logp, opt.OptFind)
+		changeLightBrightness(bridge, opt.OptBrightness, opt.OptFind)
 	}
 
 	if opt.OptTemp > 0 {
-		changeLightTemp(bridge, uint16(opt.OptTemp), logp, opt.OptFind)
+		changeLightTemp(bridge, uint16(opt.OptTemp), opt.OptFind)
 	}
 
 	if opt.OptList == true {
-		listLights(bridge, logp)
+		listLights(bridge)
 	}
 
 }
@@ -223,39 +215,36 @@ func parseColorFlag(flg string) []float32 {
 
 }
 
-func changeLightBrightness(bridge *huego.Bridge, level uint, log *loggy.Logger, optFind string) {
-	matchLights := findLights(optFind, bridge, log)
+func changeLightBrightness(bridge *huego.Bridge, level uint, optFind string) {
+	matchLights := findLights(optFind, bridge)
 	for i := range matchLights {
-		log.LogInfo(fmt.Sprintf("Changed brightness of '%v' (%v): \n %v", matchLights[i].Name, matchLights[i].ID, level))
 		err := matchLights[i].Bri(uint8(level))
 		if err != nil {
-			log.LogError(fmt.Sprintf("Error setting brightness: %v", err.Error()))
+			print("error")
 		}
 
 	}
 
 }
 
-func changeLightTemp(bridge *huego.Bridge, temp uint16, log *loggy.Logger, optFind string) {
-	matchLights := findLights(optFind, bridge, log)
+func changeLightTemp(bridge *huego.Bridge, temp uint16, optFind string) {
+	matchLights := findLights(optFind, bridge)
 	for i := range matchLights {
-		log.LogInfo(fmt.Sprintf("Changed temp of '%v' (%v): \n %vk", matchLights[i].Name, matchLights[i].ID, temp))
 		matchLights[i].Ct(temp)
 		err := matchLights[i].Ct(temp)
 		if err != nil {
-			log.LogError(fmt.Sprintf("Error changing color: %v", err.Error()))
+			print("error")
 		}
 	}
 
 }
 
-func changeLightColor(bridge *huego.Bridge, xy XYColor, log *loggy.Logger, optFind string) {
-	matchLights := findLights(optFind, bridge, log)
+func changeLightColor(bridge *huego.Bridge, xy XYColor, optFind string) {
+	matchLights := findLights(optFind, bridge)
 	for i := range matchLights {
-		log.LogInfo(fmt.Sprintf("Changed color of '%v' (%v): \n %v %v", matchLights[i].Name, matchLights[i].ID, xy.X, xy.Y))
 		err := matchLights[i].Xy(xy.ConvToArray())
 		if err != nil {
-			log.LogError(fmt.Sprintf("Error changing color: %v", err.Error()))
+			print("error")
 		}
 	}
 
@@ -272,10 +261,10 @@ func namedColor(colorstr string, named map[string]RGBColor) (color RGBColor) {
 	return
 }
 
-func findLights(nameOfLight string, bridge *huego.Bridge, log *loggy.Logger) (light []huego.Light) {
+func findLights(nameOfLight string, bridge *huego.Bridge) (light []huego.Light) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
-		log.LogError(fmt.Sprintf("Error finding lights: %v", err.Error()))
+		print("Error")
 	}
 
 	var matchedLights []huego.Light
@@ -288,14 +277,13 @@ func findLights(nameOfLight string, bridge *huego.Bridge, log *loggy.Logger) (li
 	return matchedLights
 }
 
-func listLights(bridge *huego.Bridge, log *loggy.Logger) {
+func listLights(bridge *huego.Bridge) {
 	allTheLights, err := bridge.GetLights()
 	if err != nil {
 		fmt.Println("Woops:", err.Error())
 	}
-	log.LogInfo("Found lights: ")
 	for i := range allTheLights {
-		log.LogInfo(fmt.Sprintf("%v (%v) \t Mode: %v \t %v \n", allTheLights[i].Name, allTheLights[i].ID, allTheLights[i].State.ColorMode, allTheLights[i].State.On))
+
 		fmt.Printf("%v (%v) \t Mode: %v \t %v \n", allTheLights[i].Name, allTheLights[i].ID, allTheLights[i].State.ColorMode, allTheLights[i].State.Reachable)
 
 	}
