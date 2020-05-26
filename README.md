@@ -24,7 +24,7 @@ go get -u github.com/amimof/huego
 ```
 
 
-A simple example to flash the lights are set times:
+A simple example to flash the lights at set times:
 ```go
 package main
 
