@@ -3,9 +3,8 @@ A cross-platform command line Philips Hue client built with golang and huego.
 
 ## TODO
 
-* refactor as package **NEXT**
+
 * add groups 
-* add loggy based logging **DONE**
 * add device registration **REVERTED**
 * add brightness control **DONE**
 * add hex color option **DONE**
@@ -21,12 +20,9 @@ On first run huecli will look for a YAML file "settings.yml"
 ```
 settings.yml format:
 
-hueusername: Your hue username
+hueusername: Your hue username that you get from the api
 hueip: Your hue IP
-kbteam: Keybase team for output
-kbchan: Keybase team channel for output, most likely - general -
-prog: Program name for keybae output
- 
+
 ```
 
 ## USAGE
