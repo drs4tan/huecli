@@ -4,3 +4,4 @@ huecli
 HueCLI.exe
 *.exe
 __debug_bin
+info.log
