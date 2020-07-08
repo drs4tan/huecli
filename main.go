@@ -73,7 +73,7 @@ var k = koanf.New("/")
 
 func init() {
 	flag.BoolVar(&optOff, "s", optOff, "Shutoff lights")
-	flag.BoolVar(&optList, "ls", optList, "List all Hue lights with ID and name")
+	flag.BoolVar(&optList, "ls", optList, "List all Hue lights")
 	flag.StringVar(&optFind, "f", optFind, "Find Hue lights with the name value")
 	flag.BoolVar(&optAlert, "a", optAlert, "Blink lights")
 	flag.StringVar(&optColorRGB, "rgb", optColorRGB, "Specify a color you want the light in format R-G-B (16-16-16)")
@@ -99,6 +99,7 @@ func main() {
 	namedColors := map[string]RGBColor{
 		"red":   RGBColor{255, 0, 0},
 		"blue":  RGBColor{0, 0, 255},
+		"night":  RGBColor{100, 10, 0},
 		"green": RGBColor{0, 255, 0},
 		"white": RGBColor{255, 255, 255},
 	}
