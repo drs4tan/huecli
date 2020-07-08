@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"log"
 	"github.com/amimof/huego"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -86,20 +87,26 @@ func init() {
 }
 
 func main() {
-	logFile, err := os.OpenFile("info.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-    if err != nil {
-        log.Fatal(err)
-    }
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	fmt.Println(exPath)
+	logFile, err := os.OpenFile(exPath+"/info.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.SetOutput(logFile)
-    defer logFile.Close()
-	if err := k.Load(file.Provider("settings.yml"), yaml.Parser()); err != nil {
+	defer logFile.Close()
+	if err := k.Load(file.Provider(exPath+"/settings.yml"), yaml.Parser()); err != nil {
 		log.Panic("Problem reading settings.yml")
 	}
 
 	namedColors := map[string]RGBColor{
 		"red":   RGBColor{255, 0, 0},
 		"blue":  RGBColor{0, 0, 255},
-		"night":  RGBColor{100, 10, 0},
+		"night": RGBColor{100, 10, 0},
 		"green": RGBColor{0, 255, 0},
 		"white": RGBColor{255, 255, 255},
 	}
